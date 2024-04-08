@@ -27,13 +27,13 @@ df_time24 <- df_filtered %>% filter(time_after == "24")
 df_time72 <- df_filtered %>% filter(time_after == "72")
 
 # Is there a significant change across all doses? ANOVA
-anova_0 <- aov(percent_consumed ~ dose, data = df_time0)
+anova_0 <- aov(percent_consumed ~ factor(dose), data = df_time0)
 summary(anova_0)
 
-anova_24 <- aov(percent_consumed ~ dose, data = df_time24)
+anova_24 <- aov(percent_consumed ~ factor(dose), data = df_time24)
 summary(anova_24)
 
-anova_72 <- aov(percent_consumed ~ dose, data = df_time72)
+anova_72 <- aov(percent_consumed ~ factor(dose), data = df_time72)
 summary(anova_72)
 
 # Factoring the doses to improve x-axis representation
@@ -53,16 +53,16 @@ hr0_plot <- ggplot(data = df_time0, aes(x=dose, y=percent_consumed, fill=dose)) 
   scale_fill_manual((name="Dose"),
                     labels=c("0 ug/ul", "5 ug/ul", "7 ug/ul", "9ug/ul", "11 ug/ul", "13 ug/ul"),
                     values=brewer.pal(n=6, name ="YlOrRd")) +
-                    geom_signif(comparisons = list(c("0", "7"),
+                    geom_signif(comparisons = list(c("0", "5"),
+                                                   c("0", "7"),
                                                    c("0", "9"),
                                                    c("0", "11"),
                                                    c("0", "13")),
                                   map_signif_level = TRUE,
-                                  y_position = c(18, 20, 22, 24)) +
+                                  y_position = c(18, 20, 22, 24, 26)) +
   annotate("text", x = -Inf, y = Inf, label = "A", hjust = 0, vjust = 1, size = 7)
 
 hr0_plot
-# ("0", "5") is not significant
 
 hr24_plot <- ggplot(data = df_time24, aes(x=dose, y=percent_consumed, fill=dose)) +
   geom_boxplot(alpha=0.7) +
@@ -77,14 +77,14 @@ hr24_plot <- ggplot(data = df_time24, aes(x=dose, y=percent_consumed, fill=dose)
                     values=brewer.pal(n=6, name ="YlOrRd")) +
                     geom_signif(comparisons = list(c("0", "5"),
                                                    c("0", "7"),
+                                                   c("0", "9"),
                                                    c("0", "11"),
                                                    c("0", "13")),
                                   map_signif_level = TRUE,
-                                  y_position = c(19, 21, 23, 25)) +
+                                  y_position = c(19, 21, 23, 25, 27)) +
   annotate("text", x = -Inf, y = Inf, label = "B", hjust = 0, vjust = 1, size = 7)
 
 hr24_plot
-# ("0", "9") are not significant
 
 hr72_plot <- ggplot(data = df_time72, aes(x=dose, y=percent_consumed, fill=dose)) +
   geom_boxplot(alpha=0.7) +
@@ -97,15 +97,16 @@ hr72_plot <- ggplot(data = df_time72, aes(x=dose, y=percent_consumed, fill=dose)
   scale_fill_manual((name="Dose"),
                     labels=c("0 ug/ul", "5 ug/ul", "7 ug/ul", "9ug/ul", "11 ug/ul", "13 ug/ul"),
                     values=brewer.pal(n=6, name ="YlOrRd")) +
-                    geom_signif(comparisons = list(c("0", "9"),
+                    geom_signif(comparisons = list(c("0", "5"),
+                                                   c("0", "7"),
+                                                   c("0", "9"),
                                                    c("0", "11"),
                                                    c("0", "13")),
                                 map_signif_level = TRUE,
-                                y_position = c(28, 31, 34)) +
+                                y_position = c(28, 31, 34, 37, 40)) +
   annotate("text", x = -Inf, y = Inf, label = "C", hjust = 0, vjust = 1, size = 7)
 
 hr72_plot
-# ("0","5"), ("0","7), and ("0","13") are not significant
 
 # Combine graphs into a single plot
 combined_plot <- grid.arrange(hr0_plot, hr24_plot, hr72_plot, nrow = 1)  # Arrange graphs in a single row

@@ -12,15 +12,6 @@ library(ggsignif)
 data <- read.csv("/Users/bjork/Downloads/Lab Stuff/all_histone_data_chloro.csv")
 data$unique_id <- paste(data$modification, data$date, sep = '_')
 
-# What is the amount of protein in each dose of H3K27me3?
-h3k27me3_july <- (data[data$unique_id %in% "h3k27me3_july_23", ])
-h3k27me3_july$amt_ngmg <- ((((h3k27me3_july$absorbance) - 0.006) / (300 * h3k27me3_july$slope) * 1000))
-
-h3k27me3_march <- (data[data$unique_id %in% "h3k27me3_march_24", ])
-h3k27me3_march$amt_ngmg <- ((((h3k27me3_march$absorbance) - 0.043) / (300 * h3k27me3_march$slope) * 1000))
-
-h3k27me3 <- merge(h3k27me3_july, h3k27me3_march, all=TRUE)
-
 # What is the amount of protein in each dose of H3K27ac?
 h3k27ac_july <- (data[data$unique_id %in% "h3k27ac_july_23", ])
 h3k27ac_july$amt_ngmg <- ((((h3k27ac_july$absorbance) - 0.043) / (300 * h3k27ac_july$slope) * 1000))
@@ -30,6 +21,28 @@ h3k27ac_march$amt_ngmg <- ((((h3k27ac_march$absorbance) - 0.043) / (300 * h3k27a
 
 h3k27ac <- merge(h3k27ac_july, h3k27ac_march, all=TRUE)
 
+# What is the amount of protein in each dose of H3K27me3?
+h3k27me3_july <- (data[data$unique_id %in% "h3k27me3_july_23", ])
+h3k27me3_july$amt_ngmg <- ((((h3k27me3_july$absorbance) - 0.006) / (300 * h3k27me3_july$slope) * 1000))
+
+h3k27me3_march <- (data[data$unique_id %in% "h3k27me3_march_24", ])
+h3k27me3_march$amt_ngmg <- ((((h3k27me3_march$absorbance) - 0.043) / (300 * h3k27me3_march$slope) * 1000))
+
+h3k27me3 <- merge(h3k27me3_july, h3k27me3_march, all=TRUE)
+
+# Statistical testing
+h3k27ac_lm<-lm(amt_ngmg~factor(dose), data=h3k27ac)
+h3k27ac_anova<-aov(h3k27ac_lm)
+summary(h3k27ac_anova)
+h3k27ac_t<-TukeyHSD(h3k27ac_anova)
+h3k27ac_t
+
+h3k27me3_lm<-lm(amt_ngmg~factor(dose), data=h3k27me3)
+h3k27me3_anova<-aov(h3k27me3_lm)
+summary(h3k27me3_anova)
+h3k27me3_t<-TukeyHSD(h3k27me3_anova)
+h3k27me3_t
+
 # What is the amount of protein in each dose of H3K4me3?
 #h3k4me3 <- (data[data$unique_id %in% "h3k4me3_july_23", ])
 #h3k4me3$amt_ngmg <- ((((h3k4me3$absorbance) - 0.043) / (300* h3k4me3$slope)) * 1000)
@@ -37,23 +50,17 @@ h3k27ac <- merge(h3k27ac_july, h3k27ac_march, all=TRUE)
 #Combining all data frames together for plotting
 all_histone_protein <- rbind(h3k27ac, h3k27me3)
 
-# Fixing x-axis spacing
-all_histone_protein$dose <- as.numeric(all_histone_protein$dose)
-all_histone_protein$dose <- as.factor(all_histone_protein$dose)
-h3k27me3$dose <- as.numeric(h3k27me3$dose)
-h3k27me3$dose <- as.factor(h3k27me3$dose)
-h3k27ac$dose <- as.numeric(h3k27ac$dose)
-h3k27ac$dose <- as.factor(h3k27ac$dose)
-#h3k4me3$dose <- as.numeric(h3k4me3$dose)
-#h3k4me3$dose <- as.factor(h3k4me3$dose)
-
 # Barplot representing the different protein amounts
 library(RColorBrewer)
-ggplot(all_histone_protein, aes(x=dose, y=amt_ngmg)) + 
-  geom_bar(stat = "summary",  width = 0.75, aes(fill=modification),
-           position = "dodge2", fun="mean", color = "black",
-           show.legend = T) +
+ggplot(all_histone_protein, aes(x=factor(dose), y=amt_ngmg)) + 
   theme_minimal() +
+  geom_bar(stat = "summary",  
+           width = 0.75, 
+           aes(fill=modification),
+           position = "dodge2", 
+           fun="mean", 
+           color = "black",
+           show.legend = T) +
   labs(title = "Amount of Modified Histone Protein Amount (ng/mg)",
        x = "Dose (ug/ul)",
        y = "Modified Histone Protein (ng/mg)",
@@ -64,17 +71,13 @@ ggplot(all_histone_protein, aes(x=dose, y=amt_ngmg)) +
                     values=brewer.pal(n=3, name ="YlOrRd"))
 
 # Math to add a hline at the median for 0 ug/ul
-h3k27me3_0ug <- (h3k27me3[h3k27me3$dose %in% "0", ])
-median(h3k27me3_0ug$amt_ngmg) # 0.6853457
-
 h3k27ac_0ug <- (h3k27ac[h3k27ac$dose %in% "0", ])
 median(h3k27ac_0ug$amt_ngmg) # 0.2775453
 
-# Boxplot
-h3k27me3$dose <- as.factor(h3k27me3$dose)
-h3k27ac$dose <- as.factor(h3k27ac$dose)
+h3k27me3_0ug <- (h3k27me3[h3k27me3$dose %in% "0", ])
+median(h3k27me3_0ug$amt_ngmg) # 0.6853457
 
-boxplot_histone <- ggplot(all_histone_protein, aes(x=dose, y=amt_ngmg, fill=modification)) +
+boxplot_histone <- ggplot(all_histone_protein, aes(x=factor(dose), y=amt_ngmg, fill=modification)) +
   geom_boxplot(alpha=0.7) +
   theme_light() +
   labs(title = "Amount of Modified Histone Protein Amount (ng/mg)",
@@ -89,11 +92,21 @@ boxplot_histone <- ggplot(all_histone_protein, aes(x=dose, y=amt_ngmg, fill=modi
 boxplot_histone + geom_hline(yintercept = c(0.6853457, 0.2775453), color = c("darkorange4", "darkgoldenrod3"), linetype = c("dashed", "longdash"))
 
 # Graphs of each modification
-h3k27me3_plot <-ggplot(data=h3k27me3, aes(x=dose, y=amt_ngmg, fill=dose)) +
-  geom_bar(stat = "summary", fun="mean", width = 0.75, color = "black",
-           show.legend = T) +
+h3k27ac_plot <-ggplot(data=h3k27ac, aes(x=factor(dose), y=amt_ngmg)) +
   theme_minimal() +
-  labs(title = "Amount of Modified Histone Protein Amount (ng/mg)",
+  stat_summary(fun='mean', 
+               geom='bar',
+               show.legend = F,
+               fill="goldenrod2",
+               color = 'black') +
+  geom_signif(comparisons = list(c("0", "5"),
+                                 c("0", "7"),
+                                 c("0", "9"),
+                                 c("0", "11"),
+                                 c("0", "13")),
+              map_signif_level = TRUE,
+              y_position = c(0.35, 0.40, 0.45, 0.50, 0.55)) +
+  labs(title = "Amount of H3K27ac Modified Histone Protein Amount (ng/mg)",
        x = "Dose (ug/ul)",
        y = "Modified Histone Protein (ng/mg)",
        color = "Dose") +
@@ -103,13 +116,23 @@ h3k27me3_plot <-ggplot(data=h3k27me3, aes(x=dose, y=amt_ngmg, fill=dose)) +
                     values=brewer.pal(n=6, name ="YlOrRd")) +
   annotate("text", x = -Inf, y = Inf, label = "A", hjust = 0, vjust = 0.9, size = 6)
 
-h3k27me3_plot
+h3k27ac_plot
 
-h3k27ac_plot <-ggplot(data=h3k27ac, aes(x=dose, y=amt_ngmg, fill=dose)) +
-  geom_bar(stat = "summary", fun="mean", width = 0.75, color = 'black',
-           show.legend = T) +
+h3k27me3_plot <- ggplot(data=h3k27me3, aes(x=factor(dose), y=amt_ngmg)) +
   theme_minimal() +
-  labs(title = "Amount of Modified Histone Protein Amount (ng/mg)",
+  stat_summary(fun='mean', 
+               geom='bar',
+               show.legend = F,
+               fill="goldenrod2",
+               color = 'black') +
+  geom_signif(comparisons = list(c("0", "5"),
+                                 c("0", "7"),
+                                 c("0", "9"),
+                                 c("0", "11"),
+                                 c("0", "13")),
+              map_signif_level = TRUE,
+              y_position = c(0.9, 1.0, 1.1, 1.2, 1.3)) +
+  labs(title = "Amount of H3K27me3 Modified Histone Protein Amount (ng/mg)",
        x = "Dose (ug/ul)",
        y = "Modified Histone Protein (ng/mg)",
        color = "Dose") +
@@ -119,7 +142,7 @@ h3k27ac_plot <-ggplot(data=h3k27ac, aes(x=dose, y=amt_ngmg, fill=dose)) +
                     values=brewer.pal(n=6, name ="YlOrRd")) +
   annotate("text", x = -Inf, y = Inf, label = "B", hjust = 0, vjust = 0.9, size = 6)
 
-h3k27ac_plot
+h3k27me3_plot
 
 # h3k4me3_plot <-ggplot(data=h3k4me3, aes(x=dose, y=amt_ngmg, fill=dose)) +
 #   geom_bar(stat = "summary", fun="mean", width = 0.75, color = 'black',
@@ -136,13 +159,10 @@ h3k27ac_plot
 # 
 # h3k4me3_plot
 
-grid.arrange(h3k27me3_plot, h3k27ac_plot)
+grid.arrange(h3k27ac_plot, h3k27me3_plot)
 
 # Line graph representing this data
-h3k27me3$dose <- as.factor(h3k27me3$dose)
-h3k27ac$dose <- as.factor(h3k27ac$dose)
-
-histone_plot <- ggplot(all_histone_protein, aes(x=dose, y=amt_ngmg, group = modification)) +
+histone_plot <- ggplot(all_histone_protein, aes(x=factor(dose), y=amt_ngmg, group = modification)) +
   geom_smooth(method=loess, aes(color=modification),lty=1,se=F) +
   scale_color_manual(name="Modification",
                      labels=c("H3K27ac","H3K27me3","H3K4me3"),
@@ -157,35 +177,32 @@ histone_plot <- ggplot(all_histone_protein, aes(x=dose, y=amt_ngmg, group = modi
 histone_plot
 
 ### For some reason you need to rerun the code from lines 11 to 31 because the doses get corrupted
-# Fit a loess regression model H3K27me3
-h3k27me3$dose <- as.numeric(h3k27me3$dose)
-fit_h3k27me3 <- loess(amt_ngmg ~ dose, data = h3k27me3)
-dose_min_h3k27me3 <- min(h3k27me3$dose)
-dose_max_h3k27me3 <- max(h3k27me3$dose)
-predicted_min_h3k27me3 <- predict(fit_h3k27me3, newdata = data.frame(dose = dose_min_h3k27me3))
-predicted_max_h3k27me3 <- predict(fit_h3k27me3, newdata = data.frame(dose = dose_max_h3k27me3))
-slope_h3k27me3 <- (predicted_max_h3k27me3 - predicted_min_h3k27me3) / (dose_max_h3k27me3 - dose_min_h3k27me3)
-print(slope_h3k27me3)
 
-h3k27me3_lm <- lm(amt_ngmg~factor(dose), data=h3k27me3)
-summary(h3k27me3_lm)
-anova_h3k27me3<-aov(h3k27me3_lm)
-summary(anova_h3k27me3)
+# Significance level
+alpha <- 0.05
+model <- lm(amt_ngmg ~ dose, data = h3k27ac)
+coef_summary <- summary(model)$coefficients
+p_values <- coef_summary[grep("dose^", rownames(coef_summary)), "Pr(>|t|)"]
+significant <- any(p_values < alpha)
 
-# Fit a loess regression model H3K27me3
-h3k27ac$dose <- as.numeric(h3k27ac$dose)
-fit_h3k27ac <- loess(amt_ngmg ~ dose, data = h3k27ac)
-dose_min_h3k27ac <- min(h3k27ac$dose)
-dose_max_h3k27ac <- max(h3k27ac$dose)
-predicted_min_h3k27ac <- predict(fit_h3k27ac, newdata = data.frame(dose = dose_min_h3k27ac))
-predicted_max_h3k27ac <- predict(fit_h3k27ac, newdata = data.frame(dose = dose_max_h3k27ac))
-slope_h3k27ac <- (predicted_max_h3k27ac - predicted_min_h3k27ac) / (dose_max_h3k27ac - dose_min_h3k27ac)
-print(slope_h3k27ac)
+if (significant) {
+  cat("There is significant evidence that the slopes across different x values are not all zero.\n")
+} else {
+  cat("There is no significant evidence that the slopes across different x values are all zero.\n")
+}
 
-h3k27ac_lm <- lm(amt_ngmg~factor(dose), data=h3k27ac)
-summary(h3k27ac_lm)
-anova_h3k27ac<-aov(h3k27ac_lm)
-summary(anova_h3k27ac)
+model <- lm(amt_ngmg ~ dose, data = h3k27me3)
+coef_summary <- summary(model)$coefficients
+p_values <- coef_summary[grep("dose^", rownames(coef_summary)), "Pr(>|t|)"]
+significant <- any(p_values < alpha)
+
+if (significant) {
+  cat("There is significant evidence that the slopes across different x values are not all zero.\n")
+} else {
+  cat("There is no significant evidence that the slopes across different x values are all zero.\n")
+}
+
+
 
 # What is the relative percent change of histone modifications to its control?
 # h3k27me3 percent change
@@ -209,9 +226,8 @@ avg_absorbance_h3k27ac$modification <- c("h3k27ac")
 
 # Binding all data together
 data <- merge(avg_absorbance_h3k27ac, avg_absorbance_h3k27me3, all = TRUE)
-data$dose <- as.factor(data$dose)
 
-ggplot(data, aes(x=dose, y=percent_change, group=modification)) +
+ggplot(data, aes(x=factor(dose), y=percent_change, group=modification)) +
   geom_point(size = 2, aes(color=modification)) +
   geom_smooth(method=loess, aes(color=modification), se=F, lwd=1.5) +
   theme_light() +
@@ -224,4 +240,3 @@ ggplot(data, aes(x=dose, y=percent_change, group=modification)) +
        color = "Dose") +
   theme(plot.title = element_text(hjust = 0.5)) +
   geom_hline(aes(yintercept = 100), col='red', lty=2, lwd=1)
-

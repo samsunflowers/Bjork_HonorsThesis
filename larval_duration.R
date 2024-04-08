@@ -13,17 +13,30 @@ avg_pupation_days <- pupation_data %>%
   group_by(dose) %>%
   summarise(avg_pupation_days = mean(days_to_pupate))
 
-# Is there a significant change across all doses? ANOVA
-anova <- aov(days_to_pupate ~ dose, data = pupation_data)
-summary(anova)
+pupation_data_long <- merge(pupation_data, avg_pupation_days, by = "dose")
 
-# Factoring the doses to improve x-axis representation
-pupation_data$dose <- as.factor(pupation_data$dose)
-avg_pupation_days$dose <- as.factor(avg_pupation_days$dose)
+# Is there a significant change across all doses? ANOVA
+duration_lm<-lm(days_to_pupate~factor(dose), data=pupation_data)
+duration_anova<-aov(duration_lm)
+summary(duration_anova)
+duration_t<-TukeyHSD(duration_anova)
+duration_t
 
 # Bargraph and boxplot representing days to pupation
-ggplot(avg_pupation_days, aes(x = dose, y = avg_pupation_days)) +
-  geom_bar(stat = "identity", fill = "goldenrod2", color = "black") +
+ggplot(pupation_data_long, aes(x = factor(dose), y = days_to_pupate)) +
+  theme_minimal()+
+  stat_summary(fun='mean', 
+               geom='bar',
+               show.legend = F,
+               fill="goldenrod2",
+               color = 'black') +
+  geom_signif(comparisons = list(c("0", "5"),
+                                 c("0", "7"),
+                                 c("0", "9"),
+                                 c("0", "11"),
+                                 c("0", "13")),
+              map_signif_level = TRUE,
+              y_position = c(20, 24, 28, 32, 36)) +
   labs(title ="Comparison of Average Days to Pupation",
        x = "Dose (ug/ul)", 
        y = "Days to Pupation") +
@@ -32,13 +45,14 @@ ggplot(avg_pupation_days, aes(x = dose, y = avg_pupation_days)) +
                                            nsmall = 1),
                                           "days"),
                 vjust = -0.6, 
-                hjust = 0.5, 
+                hjust = 0.5,
+                y = avg_pupation_days,
                 size = 3), 
             show.legend = F) +
   theme(plot.title = element_text(hjust = 0.5))
 
-ggplot(data = pupation_data, aes(x=dose, y=days_to_pupate, fill=dose)) +
-  geom_boxplot(alpha=0.7) +
+ggplot(data = pupation_data, aes(x=factor(dose), y=days_to_pupate, fill = as.character(dose))) +
+  geom_boxplot(alpha = 0.7) +
   theme_minimal() +
   labs(title = "Days To Pupation",
        x = "Dose (ug/ul)",
@@ -51,7 +65,7 @@ ggplot(data = pupation_data, aes(x=dose, y=days_to_pupate, fill=dose)) +
                     geom_signif(comparisons = list(c("0", "5"),
                                                    c("0", "7"),
                                                    c("0", "9"),
+                                                   c("0", "11"),
                                                    c("0", "13")),
                                 map_signif_level = TRUE,
-                                y_position = c(24, 27, 30, 33))
-# ("0","11") was not significant since there was only one value for 11 ug/ul.
+                                y_position = c(24, 27, 30, 33, 36))
